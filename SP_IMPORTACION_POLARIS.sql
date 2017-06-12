@@ -42,6 +42,13 @@ BEGIN
   --SELECCIONAR TIPO DE CAMBIO EN EUROS Y DOLARES  
   --SELECT @TCEUROS=ISNULL(TIPOCAMBIO,0) FROM MON WHERE MONEDA='Euros'  
   SELECT @TCDolares=ISNULL(TIPOCAMBIO,0) FROM MON WHERE MONEDA='Dolar'  
+/*Tabla temporal precio con descuento de nueva carga de archivo polaris*/
+  CREATE TABLE #PrecioArticulo
+  (
+    Articulo varchar(20),
+    Precio   varchar(10),
+    Preciodescuento varchar(10) null,
+  )
       
   CREATE TABLE #TempArticulo            
       (             
@@ -64,7 +71,12 @@ BEGIN
     
   INSERT #TempArticulo   
       (Articulo,Precio)  
-  SELECT SUBSTRING(DATOS,1,13),SUBSTRING(DATOS,47,8) FROM LISTADATOSPOLARIS  
+  SELECT SUBSTRING(DATOS,1,13),SUBSTRING(DATOS,47,8) FROM LISTADATOSPOLARIS 
+/*Calculando precio con descuento de articulos cargados*/
+INSERT INTO #PrecioArticulo
+  SELECT M.Articulo,M.Precio,CAST(((CAST(Precio AS FLOAT)*0.01) * DistributorNet) AS VARCHAR) from #TempArticulo M
+  LEFT JOIN MasterRepuestosPolarisDescuento D  on d.CodeDiscount = M.Codigo
+  WHERE PRECIO NOT LIKE '%TBA%' 
   
  DELETE FROM  MasterRepuestosPolaris where Articulo in (SELECT Articulo from #TempArticulo)  
   
@@ -77,6 +89,8 @@ BEGIN
   
   SELECT @ConteoRegistros = @@ROWCOUNT  
   UPDATE MasterRepuestosPolaris SET PRECIO= CAST((CAST(Precio AS FLOAT)*0.01) AS VARCHAR)  WHERE PRECIO NOT LIKE '%TBA%' AND ARTICULO IN (SELECT ARTICULO FROM #TEMPARTICULO)  
+  /*Actualizando preciolista de articulos del catagolo*/
+  UPDATE ART SET PRECIOLISTA = (SELECT PRECIODESCUENTO FROM #PrecioArticulo WHERE ARTICULO = ART.ARTICULO) WHERE ART.ARTICULO IN (SELECT ARTICULO FROM #PrecioArticulo WHERE PRECIO NOT LIKE '%TBA%')
   
   --ACTUALIZAR PRECIO DHL  
   INSERT #PCDTemp             
