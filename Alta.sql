@@ -1,4 +1,3 @@
-x
 /****** Object:  StoredProcedure [dbo].[spAltaArticuloMasterPolaris]    Script Date: 3/05/2017 14:09:18 ******/
 DROP PROCEDURE [dbo].[spAltaArticuloMasterPolaris]
 GO
