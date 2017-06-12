@@ -56,13 +56,14 @@ BEGIN
         ( Articulo, Descripcion1, Categoria, Familia, Fabricante, ClaveFabricante, Impuesto1, Unidad, UnidadCompra,           
           UnidadTraspaso, UnidadCantidad,TipoCosteo, Peso, Tipo, TipoOpcion, MonedaCosto, MonedaPrecio, FactorAlterno,           
           Estatus, Alta, UltimoCambio, Usuario, EstatusPrecio, WMostrar, SeCompra, SeVende, RevisionUsuario, RutaDistribucion,           
-          EstatusCosto, Proveedor, FactorCompra, GrupoDeUtilidad, CodigoAlterno, Presentacion, TipoImpuesto1)          
+          EstatusCosto, Proveedor, FactorCompra, GrupoDeUtilidad, CodigoAlterno, Presentacion, TipoImpuesto1,PrecioLista)          
   SELECT A.Articulo, A.Descripcion, 'Repuestos', 'Repuestos', 'Polaris', A.Articulo, 12, 'pza', 'pza',          
          'pza', 1, @TipoCosteo, null, 'Normal', 'No', 'Quetzales', 'Dolar', 1,           
          'ALTA', GETDATE(), GETDATE(), @Usuario, 'NUEVO', 1, 1, 1, @Usuario, 1,           
-         'SINCAMBIO', @Proveedor,1, 'DF', A.Articulo, 'GENERICO', 'IVA'      
+         'SINCAMBIO', @Proveedor,1, 'DF', A.Articulo, 'GENERICO', 'IVA',Round(Precio * Distributornet,2)      
     FROM MasterRepuestosPolaris A          
     JOIN AltaArticuloPolaris    B ON A.Articulo = B.Articulo          
+    LEFT JOIN MasterRepuestosPolarisDescuentos d ON A.codigo = d.CodeDiscount
    WHERE B.Estacion = @EstacionTrabajo          
       
               
