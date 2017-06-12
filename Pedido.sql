@@ -1,5 +1,13 @@
+DROP PROCEDURE [dbo].[spGenerarPedidoCotizadorPolaris]
+GO
   
-  
+SET DATEFIRST 7
+SET ANSI_NULLS OFF
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+SET LOCK_TIMEOUT -1
+SET QUOTED_IDENTIFIER OFF
+ 
+GO
 /*************************** PROCEDIMIENTO GENERAR PEDIDO COTIZADOR POLARIS ****************************************************/  
   
 /****** Object:  StoredProcedure [dbo].[spGenerarPedidoCotizadorPolaris]    Script Date: 20/02/2017 16:40:40 ******/  
