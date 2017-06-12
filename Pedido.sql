@@ -38,7 +38,8 @@ DECLARE
   @MovID varchar(10),    
   @Generado int,    
   @IDCompra int ,  
-  @Refe  varchar(255)   
+  @Refe  varchar(255),
+  @PrecioDescuento float   
      
     
     
@@ -117,11 +118,12 @@ DECLARE crExtraeDatos CURSOR LOCAL
           
         IF NOT EXISTS(SELECT ARTICULO FROM ART WHERE ARTICULO = @Articulo)    
          BEGIN    
-         SELECT @Descripcion= Descripcion from MasterRepuestosPolaris     
+         SELECT @PrecioDescuento = Round(M.Precio * D.Distributornet,2),@Descripcion= Descripcion from MasterRepuestosPolaris M
+         LEFT OUTER JOIN MasterRepuestosPolarisDescuento d on M.codigo = d.CodeDiscount
          where Articulo =  @Articulo    
              
          Insert Art(Articulo, Descripcion1, Tipo , Unidad, MonedaPrecio, Impuesto1, TipoImpuesto1, Presentacion, PrecioLista, Categoria, Observaciones, MonedaCosto,Estatus, UnidadCompra ,Fabricante,UnidadTraspaso)    
-         values (@Articulo, @Descripcion, 'Normal', 'pza', 'Dolar', '12','IVA','ORIGINAL',@Precio,'01-REPUESTOS PARA VEHICULOS', 'CREADO AUTOMATICAMENTE DESDE COTIZADOR POLARIS','Quetzales','ALTA','pza','Polaris','pza')    
+         values (@Articulo, @Descripcion, 'Normal', 'pza', 'Dolar', '12','IVA','GENERICO',@Precio,'01-REPUESTOS PARA VEHICULOS', 'CREADO AUTOMATICAMENTE DESDE COTIZADOR POLARIS','Quetzales','ALTA','pza','Polaris','pza')    
          SELECT @Generado = @Generado + 1     
       END     
    
