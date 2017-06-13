@@ -72,8 +72,8 @@ BEGIN
             
   INSERT #PCDTemp           
         ( Articulo , Anterior, Nuevo)          
-  SELECT A.Articulo , null,          
-         dbo.fnCalcularPreciosPolaris(A.Articulo,  @TCDolares, 1 )          
+  SELECT A.Articulo , dbo.fnPCGet(@Empresa,@Sucursal,'Dolar',1,A.Articulo,NULL,B.Unidad,'(Precio 2)'),          
+         dbo.fnCalcularPreciosPolaris(A.Articulo,  @TCDolares, 1 )  / @TCDolares
     FROM MasterRepuestosPolaris            A          
     JOIN Art          B ON A.Articulo        = B.Articulo          
     JOIN AltaArticuloPolaris               C ON A.Articulo        = C.Articulo                
@@ -111,8 +111,8 @@ BEGIN
             
   INSERT #PCDTemp           
         ( Articulo , Anterior, Nuevo)          
-SELECT A.Articulo , null,          
-         dbo.fnCalcularPreciosPolaris(A.Articulo,  @TCDolares, 2 )          
+SELECT A.Articulo ,  dbo.fnPCGet(@Empresa,@Sucursal,'Dolar',1,A.Articulo,NULL,B.Unidad,'(Precio 3)'),          
+         dbo.fnCalcularPreciosPolaris(A.Articulo,  @TCDolares, 2 ) / @TCDolares
     FROM MasterRepuestosPolaris            A          
     JOIN Art          B ON A.Articulo        = B.Articulo          
     JOIN AltaArticuloPolaris               C ON A.Articulo        = C.Articulo                
@@ -151,8 +151,8 @@ SELECT A.Articulo , null,
             
   INSERT #PCDTemp           
         ( Articulo , Anterior, Nuevo)          
- SELECT A.Articulo , null,          
-         dbo.fnCalcularPreciosPolaris(A.Articulo,  @TCDolares, 3 )          
+ SELECT A.Articulo , dbo.fnPCGet(@Empresa,@Sucursal,'Dolar',1,A.Articulo,NULL,B.Unidad,'(Precio 4)'),          
+         dbo.fnCalcularPreciosPolaris(A.Articulo,  @TCDolares, 3 ) / @TCDolares
     FROM MasterRepuestosPolaris            A          
     JOIN Art          B ON A.Articulo        = B.Articulo          
     JOIN AltaArticuloPolaris               C ON A.Articulo        = C.Articulo                
