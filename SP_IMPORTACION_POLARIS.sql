@@ -15,7 +15,7 @@ IF EXISTS (
 GO
   
   
-CREATE PROCEDURE [dbo].[SP_IMPORTACION_POLARIS]                 
+CREATE PROCEDURE [dbo].[SP_IMPORTACION_POLARIS]                
         @Estacion              int        ,                
         @Empresa               varchar( 5),                
         @Usuario               varchar(10),                
@@ -42,22 +42,22 @@ BEGIN
   --SELECCIONAR TIPO DE CAMBIO EN EUROS Y DOLARES  
   --SELECT @TCEUROS=ISNULL(TIPOCAMBIO,0) FROM MON WHERE MONEDA='Euros'  
   SELECT @TCDolares=ISNULL(TIPOCAMBIO,0) FROM MON WHERE MONEDA='Dolar'  
-/*Tabla temporal precio con descuento de nueva carga de archivo polaris*/
+
   CREATE TABLE #PrecioArticulo
   (
     Articulo varchar(20),
-    Precio   varchar(10),
-    Preciodescuento varchar(10) null,
-  )
+	Precio   varchar(10),
+	Preciodescuento varchar(10) null,
+)
       
   CREATE TABLE #TempArticulo            
       (             
         Articulo       varchar(20),        
         Precio      varchar (8) null,         
         ClaveDescuento    varchar(1) null,    
-        keyfigurelistaprecioespecial varchar(1) null,      
-       ) 
-	         
+        keyfigurelistaprecioespecial varchar(1) null, 
+	Codigo varchar(10) null    
+       )       
        
    CREATE TABLE #PCDTemp          
       (           
@@ -70,14 +70,14 @@ BEGIN
   
     
   INSERT #TempArticulo   
-      (Articulo,Precio)  
-  SELECT SUBSTRING(DATOS,1,13),SUBSTRING(DATOS,47,8) FROM LISTADATOSPOLARIS 
-/*Calculando precio con descuento de articulos cargados*/
-INSERT INTO #PrecioArticulo
-  SELECT M.Articulo,M.Precio,CAST(((CAST(Precio AS FLOAT)*0.01) * DistributorNet) AS VARCHAR) from #TempArticulo M
+      (Articulo,Precio,Codigo)  
+  SELECT SUBSTRING(DATOS,1,13),SUBSTRING(DATOS,47,8) ,SUBSTRING(DATOS,45,2) FROM LISTADATOSPOLARIS  
+
+  INSERT INTO #PrecioArticulo
+  SELECT M.Articulo,M.Precio,CAST(((CAST(Precio AS FLOAT)*0.01) * ISNULL(DistributorNet,0)) AS VARCHAR) from #TempArticulo M
   LEFT JOIN MasterRepuestosPolarisDescuento D  on d.CodeDiscount = M.Codigo
-  WHERE PRECIO NOT LIKE '%TBA%' 
-  
+  WHERE PRECIO NOT LIKE '%TBA%' AND M.Codigo is not null
+
  DELETE FROM  MasterRepuestosPolaris where Articulo in (SELECT Articulo from #TempArticulo)  
   
   INSERT INTO MasterRepuestosPolaris(ARTICULO,DESCRIPCION,CODIGO,PRECIO,REFERENCIA,UNIDAD,CLASE,SNOWMOBILE,ATV,PWC,VICTORY,RANGER,PPS,POLARIS_POWER,BOATS,LEV,MIL,MOTOCICLETAS_INDIAN,RZR,SLINGSHOT)  
@@ -87,11 +87,12 @@ INSERT INTO #PrecioArticulo
   SUBSTRING(DATOS,80,1),SUBSTRING(DATOS,81,1) FROM LISTADATOSPOLARIS  
   
   
-  SELECT @ConteoRegistros = @@ROWCOUNT  
+  SELECT @ConteoRegistros = @@ROWCOUNT
+    
   UPDATE MasterRepuestosPolaris SET PRECIO= CAST((CAST(Precio AS FLOAT)*0.01) AS VARCHAR)  WHERE PRECIO NOT LIKE '%TBA%' AND ARTICULO IN (SELECT ARTICULO FROM #TEMPARTICULO)  
-  /*Actualizando preciolista de articulos del catagolo*/
+
   UPDATE ART SET PRECIOLISTA = (SELECT PRECIODESCUENTO FROM #PrecioArticulo WHERE ARTICULO = ART.ARTICULO) WHERE ART.ARTICULO IN (SELECT ARTICULO FROM #PrecioArticulo WHERE PRECIO NOT LIKE '%TBA%')
-  
+
   --ACTUALIZAR PRECIO DHL  
   INSERT #PCDTemp             
         ( Articulo , Anterior, Nuevo)            
@@ -202,7 +203,7 @@ INSERT INTO #PrecioArticulo
  /* IF @CantidadActualizada IS NULL               
     SELECT @CantidadActualizada = 0            */  
                   
-  SELECT 'SE ACTUALIZARON ' + CONVERT(varchar,@ConteoRegistros) + ' PIEZAS DEL MASTER DE ARTICULOS.'            
+  SELECT 'SE ACTUALIZARON ' + CONVERT(varchar,@ConteoRegistros) + ' PIEZAS DEL MASTER DE ARTICULOS.'          
     
 delete listadatospolaris where estacion = @Estacion  
 --SE ACTUALIZARON ' + CONVERT(varchar,@CantidadActualizada) + ' PRECIOS.'            
