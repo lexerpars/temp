@@ -1,6 +1,20 @@
+SET DATEFIRST 7
+SET ANSI_NULLS OFF
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+SET LOCK_TIMEOUT - 1
+SET QUOTED_IDENTIFIER OFF
+GO
+
+IF EXISTS (
+  SELECT *
+  FROM sysobjects
+  WHERE id = object_id('spImportarMasterPolaris')
+   AND type = 'P'
+  )
+ DROP PROCEDURE dbo.spImportarMasterPolaris 
+GO    
     
-    
-CREATE PROCEDURE [dbo].[SP_IMPORTACION_POLARIS]                  
+CREATE PROCEDURE [dbo].[dbo.spImportarMasterPolaris]                  
         @Estacion              int        ,                  
         @Empresa               varchar( 5),                  
         @Usuario               varchar(10),                  
@@ -28,20 +42,13 @@ BEGIN
   --SELECT @TCEUROS=ISNULL(TIPOCAMBIO,0) FROM MON WHERE MONEDA='Euros'    
   SELECT @TCDolares=ISNULL(TIPOCAMBIO,0) FROM MON WHERE MONEDA='Dolar'    
   
-  CREATE TABLE #PrecioArticulo  
-  (  
-    Articulo varchar(20),  
- Precio   varchar(10),  
- Preciodescuento varchar(10) null,  
-)  
-        
   CREATE TABLE #TempArticulo              
       (               
         Articulo       varchar(20),          
-        Precio      varchar (8) null,           
+        PrecioVentaNuevo      varchar (8) null,           
         ClaveDescuento    varchar(1) null,      
         keyfigurelistaprecioespecial varchar(1) null,   
-        Codigo varchar(10) null      
+        precioespecialnuevo float null      
        )         
          
    CREATE TABLE #PCDTemp            
@@ -56,12 +63,7 @@ BEGIN
       
   INSERT #TempArticulo     
       (Articulo,Precio,Codigo)    
-  SELECT SUBSTRING(DATOS,1,13),SUBSTRING(DATOS,47,8) ,SUBSTRING(DATOS,45,2) FROM LISTADATOSPOLARIS    
-  
-  INSERT INTO #PrecioArticulo  
-  SELECT M.Articulo,M.Precio,CAST(((CAST(Precio AS FLOAT)*0.01) * ISNULL(DistributorNet,0)) AS VARCHAR) from #TempArticulo M  
-  LEFT JOIN MasterRepuestosPolarisDescuento D  on d.CodeDiscount = M.Codigo  
-  WHERE PRECIO NOT LIKE '%TBA%' AND M.Codigo is not null  
+  SELECT SUBSTRING(DATOS,1,13),SUBSTRING(DATOS,47,8) FROM LISTADATOSPOLARIS    
   
  DELETE FROM  MasterRepuestosPolaris where Articulo in (SELECT Articulo from #TempArticulo)    
     
@@ -76,15 +78,55 @@ BEGIN
       
   UPDATE MasterRepuestosPolaris SET PRECIO= CAST((CAST(Precio AS FLOAT)*0.01) AS VARCHAR)  WHERE PRECIO NOT LIKE '%TBA%' AND ARTICULO IN (SELECT ARTICULO FROM #TEMPARTICULO)    
   
-  UPDATE ART SET PRECIOLISTA = (SELECT PRECIODESCUENTO FROM #PrecioArticulo WHERE ARTICULO = ART.ARTICULO) WHERE ART.ARTICULO IN (SELECT ARTICULO FROM #PrecioArticulo WHERE PRECIO NOT LIKE '%TBA%')  
-  
+   --ACTUALIZAR PRECIO LISTA 
+  TRUNCATE TABLE #PCDTemp
+    INSERT #PCDTemp             
+        ( Articulo , Anterior, Nuevo)            
+  SELECT A.Articulo , dbo.fnPCGet(@Empresa,@Sucursal,'Dolar',1,A.Articulo,NULL,B.Unidad,'(Precio Lista)'),
+    ROUND(M.Precio * D.DistributorNet,2)                     
+    FROM #TempArticulo                 A            
+    JOIN Art                           B ON A.Articulo        = B.Articulo    
+JOIN MasterRepuestosPolaris M on B.Articulo = M.Articulo
+LEFT JOIN MasterRepuestosPolarisDescuento D on D.CodeDiscount = M.Codigo 
+WHERE B.Fabricante IN ('Polaris','POLARIS','polaris')               
+
+              
+  INSERT INTO PC            
+      (Empresa, Mov, MovID, FechaEmision, UltimoCambio, Concepto, Moneda, Proyecto, TipoCambio, Usuario, Autorizacion,            
+       DocFuente, Observaciones, Estatus, Situacion, Referencia, SituacionFecha, OrigenTipo, Origen, OrigenID, Ejercicio,            
+       Periodo, FechaRegistro, FechaConclusion, FechaCancelacion, Poliza, PolizaID, GenerarPoliza, ContID, Sucursal,             
+       ListaModificar, FechaInicio, FechaTermino, Recalcular, Parcial, SucursalOrigen, SucursalDestino, UEN)            
+  VALUES            
+     (@Empresa, 'Precios', NULL, getdate(), getdate(), NULL, 'Dolar', NULL, 1.0, @Usuario, NULL,            
+       NULL,'DESDE INTERFAZ POLARIS', 'SINAFECTAR', NULL, NULL, NULL, NULL, NULL, NULL, NULL,             
+       NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, @Sucursal,             
+       '(Precio Lista)', NULL, NULL, 0, 1, @Sucursal, NULL, NULL)            
+              
+  SELECT @IDPrecio = @@IDENTITY             
+              
+  INSERT INTO MovTiempo             
+  (Modulo, ID, FechaComenzo, FechaInicio, Estatus, Situacion)              
+  VALUES             
+  ('PC', @IDPrecio, GETDATE(), GETDATE(), 'SINAFECTAR', NULL)             
+                
+  INSERT INTO PCD            
+          (ID     , Renglon, Articulo, SubCuenta, Unidad, Anterior, Nuevo, Sucursal  ,SucursalOrigen,Baja)            
+  SELECT @IDPrecio, Renglon, Articulo, NULL     , Unidad, Anterior, Nuevo, @Sucursal ,@Sucursal     ,0            
+    FROM #PCDTemp            
+              
+  EXEC spAfectar 'PC', @IDPrecio, 'AFECTAR', 'Todo', NULL, @Usuario, @EnSilencio = 1            
+              
+  SELECT @IDPrecio = NULL    
+   TRUNCATE TABLE #PCDTemp 
+
   --ACTUALIZAR PRECIO DHL    
   INSERT #PCDTemp               
         ( Articulo , Anterior, Nuevo)              
-  SELECT A.Articulo , null,              
-         dbo.fnCalcularPreciosPolaris(A.Articulo, @TCDolares, 1 )              
+  SELECT A.Articulo , dbo.fnPCGet(@Empresa,@Sucursal,'Dolar',1,A.Articulo,NULL,B.Unidad,'(Precio 2)'),              
+         dbo.fnCalcularPreciosPolaris(A.Articulo, @TCDolares, 1 ) / @TCDolares
     FROM #TempArticulo                 A              
-    JOIN Art                           B ON A.Articulo        = B.Articulo                      
+    JOIN Art                           B ON A.Articulo        = B.Articulo    
+    WHERE B.Fabricante IN ('Polaris','POLARIS','polaris')                    
                 
   INSERT INTO PC              
       (Empresa, Mov, MovID, FechaEmision, UltimoCambio, Concepto, Moneda, Proyecto, TipoCambio, Usuario, Autorizacion,              
@@ -118,10 +160,11 @@ BEGIN
                 
  INSERT #PCDTemp               
         ( Articulo , Anterior, Nuevo)              
-  SELECT A.Articulo , null,              
-         dbo.fnCalcularPreciosPolaris(A.Articulo, @TCDolares, 2 )              
+  SELECT A.Articulo , dbo.fnPCGet(@Empresa,@Sucursal,'Dolar',1,A.Articulo,NULL,B.Unidad,'(Precio 3)'),              
+         dbo.fnCalcularPreciosPolaris(A.Articulo, @TCDolares, 2 )  / @TCDolares
     FROM #TempArticulo                 A              
-    JOIN Art                           B ON A.Articulo        = B.Articulo             
+    JOIN Art                           B ON A.Articulo        = B.Articulo     
+    WHERE B.Fabricante IN ('Polaris','POLARIS','polaris')         
                   
   INSERT INTO PC              
       (Empresa, Mov, MovID, FechaEmision, UltimoCambio, Concepto, Moneda, Proyecto, TipoCambio, Usuario, Autorizacion,              
@@ -155,10 +198,11 @@ BEGIN
                 
  INSERT #PCDTemp               
         ( Articulo , Anterior, Nuevo)              
-  SELECT A.Articulo , null,              
-         dbo.fnCalcularPreciosPolaris(A.Articulo, @TCDolares, 3 )              
+  SELECT A.Articulo , dbo.fnPCGet(@Empresa,@Sucursal,'Dolar',1,A.Articulo,NULL,B.Unidad,'(Precio 4)'),              
+         dbo.fnCalcularPreciosPolaris(A.Articulo, @TCDolares, 3 ) / @TCDolares
     FROM #TempArticulo                 A              
-    JOIN Art                           B ON A.Articulo        = B.Articulo               
+    JOIN Art                           B ON A.Articulo        = B.Articulo    
+    WHERE B.Fabricante IN ('Polaris','POLARIS','polaris')
                 
   INSERT INTO PC              
       (Empresa, Mov, MovID, FechaEmision, UltimoCambio, Concepto, Moneda, Proyecto, TipoCambio, Usuario, Autorizacion,              
