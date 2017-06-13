@@ -130,8 +130,8 @@ DECLARE crExtraeDatos CURSOR LOCAL
          LEFT OUTER JOIN MasterRepuestosPolarisDescuento d on M.codigo = d.CodeDiscount
          where Articulo =  @Articulo    
              
-         Insert Art(Articulo, Descripcion1, Tipo , Unidad, MonedaPrecio, Impuesto1, TipoImpuesto1, Presentacion, PrecioLista, Categoria, Observaciones, MonedaCosto,Estatus, UnidadCompra ,Fabricante,UnidadTraspaso)    
-         values (@Articulo, @Descripcion, 'Normal', 'pza', 'Dolar', '12','IVA','GENERICO',@Precio,'01-REPUESTOS PARA VEHICULOS', 'CREADO AUTOMATICAMENTE DESDE COTIZADOR POLARIS','Quetzales','ALTA','pza','Polaris','pza')    
+         Insert Art(Articulo, Descripcion1, Tipo , Unidad, MonedaPrecio, Impuesto1, TipoImpuesto1, Presentacion, PrecioLista, Categoria, Observaciones, MonedaCosto,Estatus, UnidadCompra ,Fabricante,UnidadTraspaso,Alta,Precio2,Precio3,Precio4)    
+         values (@Articulo, @Descripcion, 'Normal', 'pza', 'Dolar', '12','IVA','GENERICO',@PrecioDescuento,'01-REPUESTOS PARA VEHICULOS', 'CREADO AUTOMATICAMENTE DESDE COTIZADOR POLARIS','Quetzales','ALTA','pza','Polaris','pza',getdate(),dbo.fnCalcularPreciosPolaris(@Articulo,  @MonedaTC, 1 )/@MonedaTC,dbo.fnCalcularPreciosPolaris(@Articulo,  @MonedaTC, 2 )  / @MonedaTC  ,dbo.fnCalcularPreciosPolaris(@Articulo,  @MonedaTC, 3 )  / @MonedaTC)    
          SELECT @Generado = @Generado + 1     
       END     
    
