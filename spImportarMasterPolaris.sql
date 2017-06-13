@@ -62,7 +62,7 @@ BEGIN
     
       
   INSERT #TempArticulo     
-      (Articulo,Precio,Codigo)    
+      (Articulo,PrecioVentaNuevo)    
   SELECT SUBSTRING(DATOS,1,13),SUBSTRING(DATOS,47,8) FROM LISTADATOSPOLARIS    
   
  DELETE FROM  MasterRepuestosPolaris where Articulo in (SELECT Articulo from #TempArticulo)    
