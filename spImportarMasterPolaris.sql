@@ -77,7 +77,7 @@ BEGIN
   SELECT @ConteoRegistros = @@ROWCOUNT  
       
   UPDATE MasterRepuestosPolaris SET PRECIO= CAST((CAST(Precio AS FLOAT)*0.01) AS VARCHAR)  WHERE PRECIO NOT LIKE '%TBA%' AND ARTICULO IN (SELECT ARTICULO FROM #TEMPARTICULO)    
-  
+/*  
    --ACTUALIZAR PRECIO LISTA 
   TRUNCATE TABLE #PCDTemp
     INSERT #PCDTemp             
@@ -116,7 +116,7 @@ WHERE B.Fabricante IN ('Polaris','POLARIS','polaris')
               
   EXEC spAfectar 'PC', @IDPrecio, 'AFECTAR', 'Todo', NULL, @Usuario, @EnSilencio = 1            
               
-  SELECT @IDPrecio = NULL    
+  SELECT @IDPrecio = NULL    */
    TRUNCATE TABLE #PCDTemp 
 
   --ACTUALIZAR PRECIO DHL    
