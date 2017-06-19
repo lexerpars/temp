@@ -299,7 +299,8 @@ DescuentoSinIva,
       CASE            
         WHEN dbo.fnSerieFacturaGuatemala(MovID) = '' THEN '.'            
         WHEN dbo.fnSerieFacturaGuatemala(MovID) = '-' THEN '.'            
-        WHEN dbo.fnSerieFacturaGuatemala(MovID) IS NULL THEN '.'            
+        WHEN dbo.fnSerieFacturaGuatemala(MovID) IS NULL THEN '.'    
+        WHEN substring(dbo.fnSerieFacturaGuatemala(MovID),1,1) = '.' THEN REPLACE (dbo.fnSerieFacturaGuatemala(MovID),'.','') --rp 19/06/17 Remover "." Serie .A        
         ELSE dbo.fnSerieFacturaGuatemala(MovID)            
       END AS Serie,            
       --isnull(nullif(dbo.fnSerieFacturaGuatemala(v.MovID),''),'SIN SERIE') AS Serie,               
@@ -313,7 +314,7 @@ DescuentoSinIva,
     JOIN FACTURAELECTRONICACF CF            
       ON CF.Empresa = V.Empresa            
       AND V.Sucursal = CF.SUCURSAL            
-      AND CF.Serie = ISNULL(NULLIF(dbo.fnSerieFacturaGuatemala(v.MovID), ''), '-')            
+      AND CF.Serie = REPLACE(ISNULL(NULLIF(dbo.fnSerieFacturaGuatemala(v.MovID), ''), '-'),'.','') --rp 19/06/17 Remover "." Serie .A             
     WHERE V.ID = @ID            
     FOR xml PATH ('AsignacionSolicitada')            
     , TYPE)            
