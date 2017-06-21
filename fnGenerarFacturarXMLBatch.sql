@@ -354,7 +354,7 @@ DescuentoSinIva,
     JOIN FACTURAELECTRONICACF CF            
       ON CF.Empresa = V.Empresa            
       AND V.Sucursal = CF.SUCURSAL            
-      AND CF.Serie = ISNULL(NULLIF(dbo.fnSerieFacturaGuatemala(v.MovID), ''), '-')            
+      AND CF.Serie = case  WHEN dbo.fnSerieFacturaGuatemala(MovID) = '.A' then REPLACE(REPLACE (dbo.fnSerieFacturaGuatemala(MovID),'.',''),'-','') else ISNULL(NULLIF(dbo.fnSerieFacturaGuatemala(v.MovID), ''), '-') end --rp 19/06/17 Remover "." Serie .A            
     WHERE V.ID = @ID            
     FOR xml PATH ('Vendedor')            
     , TYPE)            
