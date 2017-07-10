@@ -10,7 +10,7 @@ IF EXISTS (
   WHERE id = object_id('spCalculodiasbono14')
    AND type = 'P'
   )
- DROP PROCEDURE dbo.spImportarMasterPolaris 
+ DROP PROCEDURE dbo.spCalculodiasbono14 
 GO 
 
 create  procedure spCalculodiasbono14(@idpersonal varchar (10))    
@@ -31,10 +31,10 @@ declare
   begin    
    set @mes=(select (MONTH(ultimopago)) from Personal where Personal=@idpersonal AND ultimopago is not null )        
   end    
- /*ELSE  
+ ELSE  
   BEGIN  
    set @mes=(select MONTH(ultimopago) from Personal where Personal=@idpersonal AND ultimopago is not null )  
-  END  */
+  END  
   --Con variable en el sp    
  set @fechaingreso= (select FechaAntiguedad from Personal where Personal=@idpersonal)    
 if @mes>=7     
