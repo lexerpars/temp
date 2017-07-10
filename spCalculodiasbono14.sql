@@ -1,3 +1,18 @@
+SET DATEFIRST 7
+SET ANSI_NULLS OFF
+SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED
+SET LOCK_TIMEOUT - 1
+SET QUOTED_IDENTIFIER OFF
+GO
+IF EXISTS (
+  SELECT *
+  FROM sysobjects
+  WHERE id = object_id('spCalculodiasbono14')
+   AND type = 'P'
+  )
+ DROP PROCEDURE dbo.spImportarMasterPolaris 
+GO 
+
 create  procedure spCalculodiasbono14(@idpersonal varchar (10))    
 as    
 declare     
@@ -14,12 +29,12 @@ declare
    
  if @PagarBonoPerAc=1     
   begin    
-   set @mes=(select (MONTH(ultimopago)+1) from Personal where Personal=@idpersonal AND ultimopago is not null )        
+   set @mes=(select (MONTH(ultimopago)) from Personal where Personal=@idpersonal AND ultimopago is not null )        
   end    
- ELSE  
+ /*ELSE  
   BEGIN  
    set @mes=(select MONTH(ultimopago) from Personal where Personal=@idpersonal AND ultimopago is not null )  
-  END  
+  END  */
   --Con variable en el sp    
  set @fechaingreso= (select FechaAntiguedad from Personal where Personal=@idpersonal)    
 if @mes>=7     
